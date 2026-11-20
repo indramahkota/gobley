@@ -67,16 +67,23 @@ private fun Project.configureProjectProperties(
         ).asFile
     )
     group = "dev.gobley.gradle"
-    version = when {
-        bindgenManifest.version.contains('-') -> bindgenManifest.version.substringBefore('-') + "-SNAPSHOT"
-        else -> bindgenManifest.version
-    }
+    version = propertyOrEnv("gobley.projects.gradle.version")
+        ?: when {
+            bindgenManifest.version.contains('-') -> bindgenManifest.version.substringBefore('-') + "-SNAPSHOT"
+            else -> bindgenManifest.version
+        }
     this.description = description
 }
 
 private fun Project.configureKotlinProperties() {
+    extensions.configure(org.gradle.api.plugins.JavaPluginExtension::class.java) {
+        sourceCompatibility = org.gradle.api.JavaVersion.VERSION_17
+        targetCompatibility = org.gradle.api.JavaVersion.VERSION_17
+    }
     extensions.configure(KotlinJvmProjectExtension::class.java) {
-        jvmToolchain(17)
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 }
 

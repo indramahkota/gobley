@@ -152,8 +152,7 @@ abstract class CargoBuildTask : CargoPackageTask() {
         for (message in messages) {
             when (message) {
                 is CargoMessage.BuildScriptExecuted -> {
-                    val buildScriptOutput = File(message.outDir).parentFile?.resolve("output")
-                        ?.readLines(Charsets.UTF_8)
+                    val buildScriptOutput = resolveBuildScriptOutput(File(message.outDir))
                     if (buildScriptOutput != null) {
                         for (line in buildScriptOutput) {
                             val searchPath = line
@@ -236,6 +235,19 @@ abstract class CargoBuildTask : CargoPackageTask() {
                     writer.write(message.outDir)
                 }
             }
+        }
+    }
+
+    internal companion object {
+        // Cargo < 1.100 writes build script stdout to `<hash>/output`, while Cargo >= 1.100 moves it to `<hash>/run/stdout`.
+        internal fun resolveBuildScriptOutput(outDir: File): List<String>? {
+            val buildScriptDir = outDir.parentFile ?: return null
+            val outputFile = listOf("output", "run/stdout")
+                .firstNotNullOfOrNull { relativePath ->
+                    buildScriptDir.resolve(relativePath).takeIf(File::isFile)
+                }
+                ?: return null
+            return outputFile.readLines(Charsets.UTF_8)
         }
     }
 }
